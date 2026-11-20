@@ -1,0 +1,65 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Package .app bundle
+        run: |
+          APP_NAME="SunliteQLC"
+          BUILD_DIR=".build/release"
+          APP_DIR="build/${APP_NAME}.app/Contents/MacOS"
+          mkdir -p "$APP_DIR"
+          cp "$BUILD_DIR/$APP_NAME" "$APP_DIR/$APP_NAME"
+          mkdir -p "build/${APP_NAME}.app/Contents/Resources"
+          cat > "build/${APP_NAME}.app/Contents/Info.plist" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>SunliteQLC</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.sunliteqlc.app</string>
+              <key>CFBundleName</key>
+              <string>SunliteQLC</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>13.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SunliteQLC-macOS-app
+          path: build/SunliteQLC.app
+
+      - name: Upload raw binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SunliteQLC-binary
+          path: .build/release/SunliteQLC
